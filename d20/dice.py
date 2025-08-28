@@ -188,6 +188,7 @@ class Roller:
             dice_tree = utils.ast_adv_copy(dice_tree, advantage)
 
         dice_expr = self._eval(dice_tree)
+        print("I was here!")
         return RollResult(dice_tree, dice_expr, stringifier)
 
     # parsers
