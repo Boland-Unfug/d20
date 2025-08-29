@@ -1,8 +1,11 @@
 from enum import IntEnum
-from typing import Callable, Mapping, MutableMapping, Optional, Type, TypeVar, Union
+from typing import Callable, Mapping, MutableMapping, Optional, Type, TypeVar, Union, List
 
 import cachetools
 import lark
+import matplotlib as plt
+import matplotlib.pyplot as plt
+
 
 from . import diceast as ast, utils
 from .errors import *
@@ -191,12 +194,59 @@ class Roller:
         dice_expr = self._eval(dice_tree)
         return RollResult(dice_tree, dice_expr, stringifier)
 
-    # probability calculators
-    def plot(self) -> None: #TODO This is the best place
+    #plotter - so far just PMF, but could be expanded
+    def plot(self,
+         expr: Union[str, ASTNode],
+         stringifier: Optional[Stringifier] = None,
+         allow_comments: bool = False) -> None:
         """
-        Turns the expression into a probability distribution
+        Turns the expression into a probability distribution and plots the PDF.
+        Supports multiple dice terms in the same expression.
         """
-        print("testing new function, see if it shows up.")
+
+        # 1. Parse or use the given AST
+        if isinstance(expr, str):
+            dice_tree = self.parse(expr, allow_comments)
+        else:
+            dice_tree = expr
+
+        def extract_dice_nodes(node) -> List["Dice"]:
+            dice_nodes = []
+            if isinstance(node, ast.Dice):
+                dice_nodes.append(node)
+            if hasattr(node, "children"):
+                for child in node.children:
+                    dice_nodes.extend(extract_dice_nodes(child))
+            return dice_nodes
+
+        dice_nodes = extract_dice_nodes(dice_tree)
+
+        if not dice_nodes:
+            print("No dice found in expression.")
+
+        # up to this point its all good - it extracts all the die in a way I believe I can use
+        # next step is adding in the probability library to make everything actually work
+
+        final_dist = None
+        for die in dice_nodes:
+            single_die_pmf = {i: 1/die.size for i in range(1, die.size+1)}
+            die_dist = ProbabilityDistribution(single_die_pmf) * die.num
+
+            if final_dist is None:
+                final_dist = die_dist
+            else:
+                final_dist = final_dist + die_dist
+
+        # 4. Plot the resulting PDF
+        pdf = final_dist.pdf()
+        x_vals = sorted(pdf.keys())
+        y_vals = [pdf[x] for x in x_vals]
+
+        plt.bar(x_vals, y_vals, width=0.9, align='center')
+        plt.xlabel("Roll Total")
+        plt.ylabel("Probability")
+        plt.title(f"Probability Distribution for {expr if isinstance(expr, str) else 'expression'}")
+        plt.show()
 
 
     # parsers
