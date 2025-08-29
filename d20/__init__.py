@@ -9,3 +9,5 @@ from .stringifiers import *
 _roller = Roller()
 roll = _roller.roll
 parse = _roller.parse
+plot = _roller.plot
+# will add roller.plot or similar #TODO

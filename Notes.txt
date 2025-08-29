@@ -1,0 +1,3 @@
+ok so what it looks like they did is the OOD approach, where they define things like die, and their states, before organizing in a tree
+probably the best way for me to integrate with this would be to add data to the objects then and have a seperate process for it in the dice file
+maybe add a class like roller or parser but for the new math

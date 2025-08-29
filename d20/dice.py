@@ -8,6 +8,7 @@ from . import diceast as ast, utils
 from .errors import *
 from .expression import *
 from .stringifiers import MarkdownStringifier, Stringifier
+from .probability import *
 
 __all__ = ("CritType", "AdvType", "RollContext", "RollResult", "Roller")
 
@@ -188,8 +189,15 @@ class Roller:
             dice_tree = utils.ast_adv_copy(dice_tree, advantage)
 
         dice_expr = self._eval(dice_tree)
-        print("I was here!")
         return RollResult(dice_tree, dice_expr, stringifier)
+
+    # probability calculators
+    def plot(self) -> None: #TODO This is the best place
+        """
+        Turns the expression into a probability distribution
+        """
+        print("testing new function, see if it shows up.")
+
 
     # parsers
     def parse(self, expr: str, allow_comments: bool = False) -> ast.Expression:
@@ -281,3 +289,5 @@ class Roller:
 
     def _eval_dice(self, node: ast.Dice) -> Dice:
         return Dice.new(node.num, node.size, context=self.context)
+
+    
