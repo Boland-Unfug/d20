@@ -1,3 +1,14 @@
 ok so what it looks like they did is the OOD approach, where they define things like die, and their states, before organizing in a tree
 probably the best way for me to integrate with this would be to add data to the objects then and have a seperate process for it in the dice file
 maybe add a class like roller or parser but for the new math
+^ for auto max damage, v for auto min damage (cleave)
+
+Made huge progress today integrating probabilities into the expression file, currently on Set, and I beleive thats the last of them.
+For set, it seems I have to add the die operators such as exploding die to the model.
+next time I come back, resume le debugging.
+
+  File "<stdin>", line 1, in <module>
+  File "C:\Users\boogl\.vscode-insiders\Projects\d20\d20\dice.py", line 216, in plot
+    dist = expr_tree.distribution
+           ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Expression' object has no attribute 'distribution'

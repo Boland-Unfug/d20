@@ -1,6 +1,7 @@
 import abc
 import random
 
+from .probability import *
 from . import diceast as ast
 from . import errors
 
@@ -72,6 +73,15 @@ class Number(abc.ABC, ast.ChildMixin):  # num
         """
         return [n for n in self.set if n.kept]
 
+    @property
+    def distribution(self) -> ProbabilityDistribution:
+        """
+        Returns the probability distribution of this Number.
+
+        :rtype: TODO
+        """
+        raise NotImplementedError
+
     def drop(self):
         """
         Makes the value of this Number node not count towards a total.
@@ -129,6 +139,11 @@ class Expression(Number):
     def children(self):
         return [self.roll]
 
+    @property
+    def distribution(self):
+        # delegate to the underlying roll
+        return self.roll.distribution
+
     def set_child(self, index, value):
         self._child_set_check(index)
         self.roll = value
@@ -164,6 +179,9 @@ class Literal(Number):
 
     def explode(self):
         self.exploded = True
+
+    def distribution(self):
+        return ProbabilityDistribution({self.number: 1.0})
 
     def update(self, value):
         """
@@ -202,6 +220,12 @@ class UnOp(Number):
     @property
     def children(self):
         return [self.value]
+
+    @property #TODO review this, idk if its cooking
+    def distribution(self):
+        # Apply op to every outcome
+        
+        return ProbabilityDistribution.apply(self.value.distribution, self.UNARY_OPS[self.op])
 
     def set_child(self, index, value):
         self._child_set_check(index)
@@ -263,6 +287,9 @@ class BinOp(Number):
             self.left = value
         else:
             self.right = value
+
+    def distribution(self):
+        return ProbabilityDistribution.combine(self.left.distribution, self.right.distribution, self.BINARY_OPS[self.op])
 
     def __repr__(self):
         return f"<BinOp left={self.left} op={self.op} right={self.right}>"
@@ -328,6 +355,14 @@ class Set(Number):
     def children(self):
         return self.values
 
+    @property
+    def distribution(self):
+        # Start with a neutral "0" distribution
+        dist = ProbabilityDistribution({0: 1.0})
+        for val in self.values:
+            dist = ProbabilityDistribution.combine(dist, val.distribution, lambda l, r: l + r)
+        return dist
+
     def set_child(self, index, value):
         self._child_set_check(index)
         self.values[index] = value
@@ -367,6 +402,12 @@ class Dice(Set):
     @property
     def children(self):
         return []
+
+    @property
+    def distribution(self):
+        # One die distribution
+        base = Die(self.size, []).distribution
+        return base * self.num  # uses __mul__ from ProbabilityDistribution
 
     def __repr__(self):
         return f"<Dice num={self.num} size={self.size} values={self.values} operations={self.operations}>"
@@ -415,6 +456,14 @@ class Die(Number):  # part of diceexpr
     def children(self):
         return []
 
+    @property
+    def distribution(self):
+        if self.size == "%":
+            # percentile: {0, 10, ..., 90}
+            return ProbabilityDistribution({i*10: 1/10 for i in range(10)})
+        else:
+            return ProbabilityDistribution({i: 1/self.size for i in range(1, self.size+1)})
+
     def _add_roll(self):
         if self.size != "%" and self.size < 1:
             raise errors.RollValueError("Cannot roll a 0-sided die.")
@@ -439,6 +488,9 @@ class Die(Number):  # part of diceexpr
     def force_value(self, new_value):
         if self.values:
             self.values[-1].update(new_value)
+
+    
+
 
     def __repr__(self):
         return f"<Die size={self.size} values={self.values}>"

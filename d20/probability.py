@@ -6,9 +6,17 @@ class ProbabilityDistribution:
         """
         pmf: dict[value, probability]
         """
-        total_prob = sum(pmf.values())
-        # normalize to be safe
-        self.pmf = {k: v / total_prob for k, v in pmf.items()}
+        total = sum(pmf.values())
+        if total == 0:
+            raise ValueError("Total probability mass cannot be zero")
+        # normalize to ensure safety
+        self.pmf = {k: v / total for k, v in pmf.items()}
+
+    def die_distribution(size: int):
+        return ProbabilityDistribution({i: 1/size for i in range(1, size+1)})
+
+    def percentile_distribution():
+        return ProbabilityDistribution({i*10: 0.1 for i in range(10)})
 
     def pdf(self):
         return self.pmf
@@ -23,13 +31,30 @@ class ProbabilityDistribution:
     def cdf(self, x):
         return sum(prob for val, prob in self.pmf.items() if val <= x)
 
-    def __add__(self, other):
-        """Convolve two distributions (sum of outcomes)."""
-        new_pmf = Counter()
-        for v1, p1 in self.pmf.items():
-            for v2, p2 in other.pmf.items():
-                new_pmf[v1 + v2] += p1 * p2
-        return ProbabilityDistribution(dict(new_pmf))
+    @staticmethod
+    def combine(a: "ProbabilityDistribution", b: "ProbabilityDistribution", op) -> "ProbabilityDistribution":
+            """
+            General convolution of two distributions with an arbitrary operator.
+            """
+            outcomes = {}
+            for l_val, l_prob in a.pmf.items():
+                for r_val, r_prob in b.pmf.items():
+                    result = op(l_val, r_val)
+                    outcomes[result] = outcomes.get(result, 0) + l_prob * r_prob
+            return ProbabilityDistribution(outcomes)
+    
+    
+    @staticmethod
+    def apply(dist: "ProbabilityDistribution", op):
+        """
+        Apply a unary operation to a probability distribution.
+        
+        :param dist: ProbabilityDistribution to transform
+        :param op: function taking one argument (e.g., lambda x: -x)
+        :return: new ProbabilityDistribution
+        """
+        new_pmf = {op(val): prob for val, prob in dist.pmf.items()}
+        return ProbabilityDistribution(new_pmf)
 
     def __mul__(self, n: int):
         """Convolve with itself n times (e.g. Nd6)."""
@@ -39,25 +64,3 @@ class ProbabilityDistribution:
         for _ in range(n - 1):
             result = result + self
         return result
-
-
-# # # Build single-die PMF: each side equally likely
-#         single_die_pmf = {i: 1 / dice_expr.size for i in range(1, dice_expr.size + 1)}
-#         single_die_dist = ProbabilityDistribution(single_die_pmf)
-
-#         # Convolve for multiple dice
-#         total_dist = single_die_dist * dice_expr.num
-
-#         pdf = total_dist.pdf()
-
-#         outcomes = sorted(pdf.keys())
-#         probabilities = [pdf[o] for o in outcomes]
-
-#         # Plot the PDF
-#         plt.figure(figsize=(8, 4))
-#         plt.bar(outcomes, probabilities, width=0.6, edgecolor='black')
-#         plt.title(f"Probability Distribution for {dice_expr.num}d{dice_expr.size}")
-#         plt.xlabel("Sum of Dice")
-#         plt.ylabel("Probability")
-#         plt.grid(axis='y', linestyle='--', alpha=0.7)
-#         plt.show()

@@ -3,7 +3,6 @@ from typing import Callable, Mapping, MutableMapping, Optional, Type, TypeVar, U
 
 import cachetools
 import lark
-import matplotlib as plt
 import matplotlib.pyplot as plt
 
 
@@ -11,7 +10,8 @@ from . import diceast as ast, utils
 from .errors import *
 from .expression import *
 from .stringifiers import MarkdownStringifier, Stringifier
-from .probability import *
+from .probability import ProbabilityDistribution
+
 
 __all__ = ("CritType", "AdvType", "RollContext", "RollResult", "Roller")
 
@@ -51,7 +51,7 @@ class RollContext:
     To use this class, pass an instance to the constructor of :class:`d20.Roller`.
     """
 
-    def __init__(self, max_rolls=1000):
+    def __init__(self, max_rolls=100):
         self.max_rolls = max_rolls
         self.rolls = 0
         self.reset()
@@ -196,49 +196,27 @@ class Roller:
 
     #plotter - so far just PMF, but could be expanded
     def plot(self,
-         expr: Union[str, ASTNode],
+         expr: Union[str, ast.Node],
          stringifier: Optional[Stringifier] = None,
          allow_comments: bool = False) -> None:
         """
-        Turns the expression into a probability distribution and plots the PDF.
-        Supports multiple dice terms in the same expression.
+        Turns any expression into a probability distribution and plots the PDF.
+        Assumes the backend implements `.distribution` for all Number nodes.
         """
 
-        # 1. Parse or use the given AST
+        # 1. Parse if needed
         if isinstance(expr, str):
-            dice_tree = self.parse(expr, allow_comments)
+            expr_tree = self.parse(expr, allow_comments)
         else:
-            dice_tree = expr
+            expr_tree = expr
 
-        def extract_dice_nodes(node) -> List["Dice"]:
-            dice_nodes = []
-            if isinstance(node, ast.Dice):
-                dice_nodes.append(node)
-            if hasattr(node, "children"):
-                for child in node.children:
-                    dice_nodes.extend(extract_dice_nodes(child))
-            return dice_nodes
+        print(expr_tree)
 
-        dice_nodes = extract_dice_nodes(dice_tree)
+        # 2. Compute the distribution of the whole expression
+        dist = expr_tree.distribution
 
-        if not dice_nodes:
-            print("No dice found in expression.")
-
-        # up to this point its all good - it extracts all the die in a way I believe I can use
-        # next step is adding in the probability library to make everything actually work
-
-        final_dist = None
-        for die in dice_nodes:
-            single_die_pmf = {i: 1/die.size for i in range(1, die.size+1)}
-            die_dist = ProbabilityDistribution(single_die_pmf) * die.num
-
-            if final_dist is None:
-                final_dist = die_dist
-            else:
-                final_dist = final_dist + die_dist
-
-        # 4. Plot the resulting PDF
-        pdf = final_dist.pdf()
+        # 3. Plot the PDF
+        pdf = dist.pdf()
         x_vals = sorted(pdf.keys())
         y_vals = [pdf[x] for x in x_vals]
 
@@ -247,7 +225,6 @@ class Roller:
         plt.ylabel("Probability")
         plt.title(f"Probability Distribution for {expr if isinstance(expr, str) else 'expression'}")
         plt.show()
-
 
     # parsers
     def parse(self, expr: str, allow_comments: bool = False) -> ast.Expression:
