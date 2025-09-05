@@ -180,6 +180,7 @@ class Literal(Number):
     def explode(self):
         self.exploded = True
 
+    @property
     def distribution(self):
         return ProbabilityDistribution({self.number: 1.0})
 
@@ -287,7 +288,7 @@ class BinOp(Number):
             self.left = value
         else:
             self.right = value
-
+    @property
     def distribution(self):
         return ProbabilityDistribution.combine(self.left.distribution, self.right.distribution, self.BINARY_OPS[self.op])
 

@@ -213,7 +213,8 @@ class Roller:
         print(expr_tree)
 
         # 2. Compute the distribution of the whole expression
-        dist = expr_tree.distribution
+        dice_expr = self._eval(expr_tree)
+        dist = dice_expr.distribution
 
         # 3. Plot the PDF
         pdf = dist.pdf()
