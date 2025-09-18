@@ -56,11 +56,12 @@ class ProbabilityDistribution:
         new_pmf = {op(val): prob for val, prob in dist.pmf.items()}
         return ProbabilityDistribution(new_pmf)
 
-    def __mul__(self, n: int):
+    def __mul__(self, n: int): #maybe I don't need this anymore? can't I just feed multiplication into the combine function
         """Convolve with itself n times (e.g. Nd6)."""
+        print(n)
         if n < 1:
             raise ValueError("n must be >= 1")
         result = self
         for _ in range(n - 1):
-            result = result + self
+            result = result + ProbabilityDistribution.combine(result, self, operator.add)
         return result

@@ -1,9 +1,11 @@
 import abc
 import random
+import operator
 
 from .probability import *
 from . import diceast as ast
 from . import errors
+
 
 __all__ = (
     "Number",
@@ -408,7 +410,12 @@ class Dice(Set):
     def distribution(self):
         # One die distribution
         base = Die(self.size, []).distribution
-        return base * self.num  # uses __mul__ from ProbabilityDistribution
+                #TODO
+        if self.num < 1:
+            raise ValueError("n must be >= 1")
+        for _ in range(self.num - 1):
+            base = base + ProbabilityDistribution.combine(base, self, operator.add)
+        return base
 
     def __repr__(self):
         return f"<Dice num={self.num} size={self.size} values={self.values} operations={self.operations}>"

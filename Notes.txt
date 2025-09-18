@@ -8,3 +8,14 @@ For set, it seems I have to add the die operators such as exploding die to the m
 
 bro so fukin much progress
 its all internal to my knowledge, I just need to test it pretty much, and if extra die operators don't work then do that too
+fix multiplication operation
+
+Real decision time: do I have overloads or a general solution function? overloads may make things more intuitive... or less
+for now I will simply fix the problem
+
+numpy has a convolve function so def use that
+also the three funcitons I effectively need are
+1.) instantiate a dice probability
+2.) put together die probabilities (xd6, 1d6 + 1d10)
+3.) apply operations such as +4
+4.) will have to ensure probabilities sum up to 1
